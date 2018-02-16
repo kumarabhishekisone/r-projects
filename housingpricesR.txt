@@ -1,0 +1,104 @@
+library(boot) 
+library(car)
+library(QuantPsyc)
+library(lmtest)
+library(sandwich)
+library(vars)
+library(nortest)
+library(MASS)
+
+setwd("C:\\Users\\kumar\\Desktop\\ R\\Linear Regression\\Class2 for linear regression")
+
+data<- read.csv("Data.csv")
+str(data)
+summary(data)
+
+
+boxplot(data$Price_house)
+quantile(data$Price_house, c(0,0.05,0.1,0.25,0.5,0.75,0.90,0.95,0.99,0.995,1))
+
+data2 <- data[data$Price_house <10198905, ]
+boxplot(data2$Price_house)
+
+quantile(data2$Price_house, c(0,0.05,0.1,0.25,0.5,0.75,0.90,0.95,0.97,0.98,0.985,0.99,0.995,1))
+data3 <- data2[data2$Price_house > 30000, ]
+boxplot(data3$Price_house)
+
+
+nrow(data)-nrow(data3)
+
+
+data <- data3
+
+
+## Check the missing value (if any)
+sapply(data, function(x) sum(is.na(x)))
+
+data <- na.omit(data)
+
+nrow(data)
+names(data)
+
+fit<- lm(Price_house ~ Taxi_dist    +	Market_dist    +	Hospital_dist    +	Carpet_area  
+  +	Builtup_area    +	Parking_type    +	City_type    +	Rainfall  
+, data=data)
+summary(fit)
+
+fit<- lm(Price_house ~ Taxi_dist    +	Market_dist    +	Hospital_dist    +	Carpet_area  
+      +	Parking_type    +	City_type 
+, data=data)
+summary(fit)
+
+
+##Final model 
+fit<- lm(Price_house ~ 	Hospital_dist    +	Carpet_area  
+      +	Parking_type    +	City_type 
+, data=data)
+summary(fit)
+
+
+
+
+
+#Check Vif, vif>2 means presence of multicollinearity
+vif(fit)
+
+
+
+## Get the predicted or fitted values
+fitted(fit)
+
+## MAPE
+data$pred <- fitted(fit)
+
+#Calculating MAPE
+attach(data)
+(sum((abs(Price_house-pred))/Price_house))/nrow(data)
+
+
+##################################### Checking of Assumption ############################################
+
+# residuals should be uncorrelated ##Autocorrelation
+# Null H0: residuals from a linear regression are uncorrelated. Value should be close to 2. 
+#Less than 1 and greater than 3 -> concern
+## Should get a high p value
+
+dwt(fit)
+
+# Checking multicollinearity
+vif(fit) # should be within 2. If it is greater than 10 then serious problem
+
+################ Constant error variance ##########Heteroscedasticity
+
+
+# Breusch-Pagan test
+bptest(fit)  # Null hypothesis -> error is homogenious (p value should be more than 0.05)
+
+
+
+## Normality testing Null hypothesis is data is normal.
+
+resids <- fit$residuals
+
+
+ad.test(resids) #get Anderson-Darling test for normality 
